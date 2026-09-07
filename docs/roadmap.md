@@ -20,24 +20,40 @@ The production-ready base this repo ships today.
 - ✅ Supabase SSR client scaffolding + Zod-validated env
 - ✅ Feature-based architecture + docs (README, architecture, CLAUDE)
 
-## Phase 1 — Platform primitives ⬜
+## Phase 1 — Platform primitives 🚧
 
 Cross-cutting capabilities every module depends on. Build these before modules.
 
-- ⬜ **Authentication** — Supabase Auth, sign in / up, session `proxy.ts`
-      (Next.js 16 renamed `middleware` → `proxy`), protected routes
-- ⬜ **Database schema & migrations** — Supabase tables, RLS policies, typed
-      client (`supabase gen types`)
+- ✅ **Authentication** — Supabase Auth: `/login` + `/signup` (RHF + Zod +
+      server actions), `/auth/callback` code exchange, sign-out, session refresh
+      and route protection via `proxy.ts` (Next.js 16 renamed `middleware` →
+      `proxy`). Open-redirect-hardened; runs in guest mode until configured.
+- ✅ **Database schema & migrations** — `profiles` table with RLS, owner-scoped
+      policies, `updated_at` + `handle_new_user` triggers; typed `Database`
+      client; `supabase/README.md` setup guide.
 - ⬜ **User profile & settings** — build out `/settings`
 - ⬜ **Quick Capture** — global capture action (wire the ⌘K / Capture button)
 - ⬜ **Global Search** — search across modules
 - ⬜ **Command palette actions** — create/act, not just navigate
 
-## Phase 2 — Core workspace modules ⬜
+## Phase 2 — Core workspace modules 🚧
 
 The daily drivers. Suggested delivery order:
 
-1. ⬜ **Notes** — capture, edit, organize
+1. ✅ **Notes** — list + editor (`/notes`, `/notes/[id]`), create, autosave
+      (debounced, per-note write-serialized), pin, delete (confirmed,
+      accessible), client-side search; `notes` table with RLS; TanStack Query
+      over Server Actions — the **reference implementation** for every module
+      after it (see [`src/features/notes`](../src/features/notes) and its
+      [README](../src/features/README.md)). Reviewed for security,
+      correctness, and accessibility; 10 issues found and fixed (raced
+      autosave writes, a pin-toggle race, a delete dialog that could unmount
+      mid-confirmation, keyboard-focus-visibility, screen-reader labels, and
+      more). Plain text for v1; rich text/markdown is a future enhancement.
+      **Known, accepted gap:** returning to `/notes` after deleting a note from
+      the editor doesn't move focus to the list — fixing it well requires
+      distinguishing that navigation from an ordinary visit to `/notes` (e.g. a
+      sidebar click), which unconditional focus-on-mount would break instead.
 2. ⬜ **Tasks** — priorities, due dates, quick add
 3. ⬜ **Projects** — group work, milestones
 4. ⬜ **Goals** — outcomes and progress

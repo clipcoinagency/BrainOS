@@ -1,5 +1,6 @@
 "use client";
 
+import { useTransition } from "react";
 import { CreditCard, LogOut, Settings, User } from "lucide-react";
 import { toast } from "sonner";
 
@@ -14,19 +15,37 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { signOut } from "@/features/auth/actions";
 
-// Placeholder identity until authentication is wired up.
-const demoUser = {
-  name: "Guest",
-  email: "guest@brainos.local",
-  initials: "G",
-};
+export interface ShellUser {
+  name: string;
+  email: string;
+  initials: string;
+}
+
+interface UserMenuProps {
+  user: ShellUser;
+  /** True when a real Supabase session is present (vs. guest mode). */
+  authenticated: boolean;
+}
 
 /**
- * Account dropdown. Actions are placeholders (auth is not implemented in the
- * foundation) and surface a toast so the shell feels alive.
+ * Account dropdown. When authenticated, "Sign out" runs the server action;
+ * otherwise the menu reflects guest mode.
  */
-export function UserMenu() {
+export function UserMenu({ user, authenticated }: UserMenuProps) {
+  const [isPending, startTransition] = useTransition();
+
+  function handleSignOut() {
+    if (!authenticated) {
+      toast("Authentication is not configured yet");
+      return;
+    }
+    startTransition(async () => {
+      await signOut();
+    });
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -37,16 +56,16 @@ export function UserMenu() {
         >
           <Avatar className="size-8">
             <AvatarFallback className="bg-brand/15 text-brand text-xs font-medium">
-              {demoUser.initials}
+              {user.initials}
             </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="flex flex-col gap-0.5">
-          <span className="text-sm font-medium">{demoUser.name}</span>
+          <span className="text-sm font-medium">{user.name}</span>
           <span className="text-muted-foreground text-xs font-normal">
-            {demoUser.email}
+            {user.email}
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -67,7 +86,11 @@ export function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           variant="destructive"
-          onSelect={() => toast("Authentication is not configured yet")}
+          disabled={isPending}
+          onSelect={(event) => {
+            event.preventDefault();
+            handleSignOut();
+          }}
         >
           <LogOut className="size-4" />
           Sign out

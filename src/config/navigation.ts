@@ -70,14 +70,14 @@ export const navigation: NavSection[] = [
         href: "/notes",
         icon: NotebookPen,
         description: "Capture thoughts, ideas, and long-form writing.",
-        status: "planned",
+        status: "available",
       },
       {
         title: "Tasks",
         href: "/tasks",
         icon: ListChecks,
         description: "Track to-dos with priorities and due dates.",
-        status: "planned",
+        status: "available",
       },
       {
         title: "Goals",

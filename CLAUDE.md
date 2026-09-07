@@ -21,7 +21,13 @@
 3. **Type everything.** No `any`. Derive types from Zod schemas where possible.
 4. **One design system.** Use `components/ui` primitives and design tokens —
    never hard-coded colors or ad-hoc spacing systems.
-5. **Import through barrels.** Consume features via `@/features/<feature>` only.
+5. **Import through barrels.** Consume features via `@/features/<feature>` — with
+   two deliberate exceptions imported by submodule path: server-only helpers
+   (`@/features/<feature>/queries`) and server actions
+   (`@/features/<feature>/actions`). Both keep server code and client components
+   out of each other's bundles (a client importing the barrel must never drag in
+   `server-only` code, and the app shell shouldn't bundle a feature's forms just
+   to call one action).
 
 ## 1. Tech stack (do not swap without discussion)
 
@@ -62,8 +68,10 @@ src/features/<feature>/
 └── index.ts     # the ONLY public surface
 ```
 
-Never import a feature's internal files from outside it. Cross-feature sharing
-gets promoted up a layer.
+Never import a feature's internal *components/hooks/lib* from outside it. The
+only paths outside code may reach are the barrel (`index.ts`), and — by design —
+`actions.ts` (server actions) and `queries.ts` (server-only). Cross-feature
+sharing of anything else gets promoted up a layer.
 
 ## 3. Naming conventions
 

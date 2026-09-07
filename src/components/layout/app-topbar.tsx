@@ -6,14 +6,19 @@ import { toast } from "sonner";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { openCommandMenu } from "@/components/layout/command-menu";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
-import { UserMenu } from "@/components/layout/user-menu";
+import { UserMenu, type ShellUser } from "@/components/layout/user-menu";
 import { Button } from "@/components/ui/button";
+
+interface AppTopbarProps {
+  user: ShellUser;
+  authenticated: boolean;
+}
 
 /**
  * Sticky top bar for the app shell: mobile nav trigger, global search
  * (opens the command palette), quick capture, notifications, theme, account.
  */
-export function AppTopbar() {
+export function AppTopbar({ user, authenticated }: AppTopbarProps) {
   return (
     <header className="bg-background/80 sticky top-0 z-30 flex h-16 items-center gap-2 border-b px-4 backdrop-blur-md sm:px-6">
       <MobileNav />
@@ -49,7 +54,7 @@ export function AppTopbar() {
           <Bell className="size-[1.15rem]" />
         </Button>
         <ThemeToggle />
-        <UserMenu />
+        <UserMenu user={user} authenticated={authenticated} />
       </div>
     </header>
   );

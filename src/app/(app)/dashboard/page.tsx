@@ -13,23 +13,13 @@ import { StatCard } from "@/components/shared/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { allModules } from "@/config/navigation";
+import { listNotes } from "@/features/notes/queries";
+import { listTasks } from "@/features/tasks/queries";
 import { isSupabaseConfigured } from "@/lib/env";
 
 export const metadata: Metadata = {
   title: "Dashboard",
 };
-
-const stats = [
-  { label: "Notes", value: "—", hint: "No notes yet", icon: NotebookPen },
-  { label: "Open tasks", value: "—", hint: "Nothing due", icon: ListChecks },
-  {
-    label: "Active goals",
-    value: "—",
-    hint: "Set your first goal",
-    icon: Target,
-  },
-  { label: "This week", value: "—", hint: "No events", icon: CalendarDays },
-];
 
 function greeting() {
   const hour = new Date().getHours();
@@ -38,7 +28,51 @@ function greeting() {
   return "Good evening";
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const [notes, tasks] = await Promise.all([listNotes(), listTasks()]);
+  const pinnedCount = notes.filter((note) => note.is_pinned).length;
+
+  const openTasks = tasks.filter((task) => !task.is_completed);
+  // A coarse, server-local "today" — fine for this summary hint. Per-task due
+  // badges use the timezone-correct, browser-local logic in
+  // features/tasks/lib/due-date.ts instead.
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const dueOrOverdueCount = openTasks.filter(
+    (task) => task.due_date && task.due_date <= todayIso,
+  ).length;
+
+  const stats = [
+    {
+      label: "Notes",
+      value: notes.length > 0 ? String(notes.length) : "—",
+      hint:
+        notes.length === 0
+          ? "No notes yet"
+          : pinnedCount > 0
+            ? `${pinnedCount} pinned`
+            : "All caught up",
+      icon: NotebookPen,
+    },
+    {
+      label: "Open tasks",
+      value: openTasks.length > 0 ? String(openTasks.length) : "—",
+      hint:
+        openTasks.length === 0
+          ? "Nothing due"
+          : dueOrOverdueCount > 0
+            ? `${dueOrOverdueCount} due or overdue`
+            : "All caught up",
+      icon: ListChecks,
+    },
+    {
+      label: "Active goals",
+      value: "—",
+      hint: "Set your first goal",
+      icon: Target,
+    },
+    { label: "This week", value: "—", hint: "No events", icon: CalendarDays },
+  ];
+
   const today = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     month: "long",
@@ -108,7 +142,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold tracking-tight">Modules</h2>
           <p className="text-muted-foreground text-sm">
-            {allModules.length} planned
+            {allModules.length} modules
           </p>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
