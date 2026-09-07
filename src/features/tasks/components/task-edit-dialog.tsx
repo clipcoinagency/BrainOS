@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -73,36 +72,47 @@ export function TaskEditDialog({
   open,
   onOpenChange,
 }: TaskEditDialogProps) {
-  // A stable id keeps the mutation's TanStack Query scope from changing while
-  // the dialog is closing (task becomes null); the hook itself is only ever
-  // invoked while a real task is open.
-  const updateTask = useUpdateTask(task?.id ?? "");
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit task</DialogTitle>
+        </DialogHeader>
+        {task ? (
+          // Keyed by task id so switching tasks REMOUNTS this form with the
+          // new task's data as its initial `defaultValues`, instead of
+          // reusing one form instance and reseeding it via an effect. An
+          // effect-based reset can only run after React has already painted
+          // the newly-opened dialog with the *previous* task's values (a
+          // guaranteed one-frame flash of stale data on every reopen) —
+          // remounting sidesteps that class of bug entirely.
+          <TaskEditForm key={task.id} task={task} onOpenChange={onOpenChange} />
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function TaskEditForm({
+  task,
+  onOpenChange,
+}: {
+  task: Task;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const updateTask = useUpdateTask(task.id);
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      priority: "none",
-      dueDate: "",
+      title: task.title,
+      description: task.description,
+      priority: task.priority,
+      dueDate: task.due_date ?? "",
     },
   });
 
-  // Re-seed the form whenever a different task opens.
-  useEffect(() => {
-    if (task) {
-      form.reset({
-        title: task.title,
-        description: task.description,
-        priority: task.priority,
-        dueDate: task.due_date ?? "",
-      });
-    }
-  }, [task, form]);
-
   function onSubmit(values: TaskFormValues) {
-    if (!task) return;
-
     updateTask.mutate(
       {
         title: values.title,
@@ -124,113 +134,105 @@ export function TaskEditDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Edit task</DialogTitle>
-        </DialogHeader>
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-4"
+        noValidate
+      >
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Title</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4"
-            noValidate
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea
+                  {...field}
+                  placeholder="Add details…"
+                  className="min-h-20"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-2 gap-3">
+          <FormField
+            control={form.control}
+            name="priority"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Priority</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {(
+                      Object.keys(
+                        PRIORITY_LABEL,
+                      ) as (keyof typeof PRIORITY_LABEL)[]
+                    ).map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {PRIORITY_LABEL[value]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="dueDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Due date</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
           >
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      placeholder="Add details…"
-                      className="min-h-20"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-3">
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Priority</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {(
-                          Object.keys(
-                            PRIORITY_LABEL,
-                          ) as (keyof typeof PRIORITY_LABEL)[]
-                        ).map((value) => (
-                          <SelectItem key={value} value={value}>
-                            {PRIORITY_LABEL[value]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="dueDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Due date</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={updateTask.isPending}>
-                {updateTask.isPending ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : null}
-                Save
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={updateTask.isPending}>
+            {updateTask.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : null}
+            Save
+          </Button>
+        </DialogFooter>
+      </form>
+    </Form>
   );
 }

@@ -105,7 +105,11 @@ export function TasksView({ initialTasks }: { initialTasks: Task[] }) {
           onChange={(event) => setQuickAdd(event.target.value)}
           placeholder="Add a task and press Enter…"
           aria-label="New task title"
-          disabled={createTask.isPending}
+          // Not disabled while pending: disabling a *focused* native input
+          // force-blurs it (deterministic browser behavior), which would
+          // kick focus out of the field after every single quick-add and
+          // break typing several tasks in a row. The submit button below
+          // already shows pending state.
         />
         <Button
           type="submit"

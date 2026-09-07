@@ -53,6 +53,7 @@ export function TaskItem({ task, onEdit, onRequestDelete }: TaskItemProps) {
       <button
         type="button"
         onClick={() => onEdit(task)}
+        aria-label={`Edit "${task.title || "Untitled task"}"`}
         className="focus-visible:ring-ring min-w-0 flex-1 rounded text-left focus-visible:ring-2 focus-visible:outline-none"
       >
         <p
@@ -60,11 +61,12 @@ export function TaskItem({ task, onEdit, onRequestDelete }: TaskItemProps) {
             "truncate text-sm",
             task.is_completed && "text-muted-foreground line-through",
           )}
+          aria-hidden
         >
           {task.title}
         </p>
         {showPriorityBadge || dueStatus ? (
-          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          <div className="mt-1 flex flex-wrap items-center gap-1.5" aria-hidden>
             {showPriorityBadge ? (
               <Badge
                 variant="outline"
