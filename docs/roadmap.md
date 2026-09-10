@@ -54,9 +54,18 @@ The daily drivers. Suggested delivery order:
       the editor doesn't move focus to the list — fixing it well requires
       distinguishing that navigation from an ordinary visit to `/notes` (e.g. a
       sidebar click), which unconditional focus-on-mount would break instead.
-2. ⬜ **Tasks** — priorities, due dates, quick add
-3. ⬜ **Projects** — group work, milestones
-4. ⬜ **Goals** — outcomes and progress
+2. ✅ **Tasks** — quick add, priority, due dates, completion toggle, edit
+      dialog (first use of the `Form` + `Select` primitives with React Hook
+      Form), delete (confirmed), search; `tasks` table with RLS. Applied every
+      Notes-review lesson from the start (per-task mutation scoping, single
+      reconciled list, list-owned delete dialog). Reviewed; 3 fixes (quick-add
+      focus loss, edit-dialog stale-data flash, a missing screen-reader label)
+      plus 2 correctly-identified false positives.
+3. ✅ **Goals** — quick add, current/target progress with inline +/− steppers,
+      status (active / achieved / archived), unit + target date, edit dialog,
+      delete (confirmed), search; `goals` table with RLS. Same patterns as
+      Tasks. Built before Projects at the user's request.
+4. ⬜ **Projects** — group work, milestones
 5. ⬜ **Journal** — daily entries
 
 ## Phase 3 — Knowledge & planning ⬜

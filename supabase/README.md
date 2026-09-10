@@ -23,9 +23,14 @@ Pick one of the following.
 
 ### Option A — Dashboard SQL editor (quickest)
 
-Open **SQL Editor** in the Supabase dashboard, paste the contents of
-[`migrations/20260808000001_init.sql`](migrations/20260808000001_init.sql), and
-run it.
+Open **SQL Editor** in the Supabase dashboard and run each migration in
+`migrations/`, in filename order:
+
+1. [`20260808000001_init.sql`](migrations/20260808000001_init.sql) — `profiles`,
+   the `updated_at` trigger, the new-user trigger
+2. [`20260907000001_notes.sql`](migrations/20260907000001_notes.sql) — `notes`
+3. [`20260907000002_tasks.sql`](migrations/20260907000002_tasks.sql) — `tasks`
+4. [`20260910000001_goals.sql`](migrations/20260910000001_goals.sql) — `goals`
 
 ### Option B — Supabase CLI (recommended for teams)
 

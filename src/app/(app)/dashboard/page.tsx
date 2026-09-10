@@ -13,6 +13,7 @@ import { StatCard } from "@/components/shared/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { allModules } from "@/config/navigation";
+import { listGoals } from "@/features/goals/queries";
 import { listNotes } from "@/features/notes/queries";
 import { listTasks } from "@/features/tasks/queries";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -29,8 +30,17 @@ function greeting() {
 }
 
 export default async function DashboardPage() {
-  const [notes, tasks] = await Promise.all([listNotes(), listTasks()]);
+  const [notes, tasks, goals] = await Promise.all([
+    listNotes(),
+    listTasks(),
+    listGoals(),
+  ]);
   const pinnedCount = notes.filter((note) => note.is_pinned).length;
+
+  const activeGoals = goals.filter((goal) => goal.status === "active");
+  const achievedCount = goals.filter(
+    (goal) => goal.status === "achieved",
+  ).length;
 
   const openTasks = tasks.filter((task) => !task.is_completed);
   // A coarse, server-local "today" — fine for this summary hint. Per-task due
@@ -66,8 +76,13 @@ export default async function DashboardPage() {
     },
     {
       label: "Active goals",
-      value: "—",
-      hint: "Set your first goal",
+      value: activeGoals.length > 0 ? String(activeGoals.length) : "—",
+      hint:
+        goals.length === 0
+          ? "Set your first goal"
+          : achievedCount > 0
+            ? `${achievedCount} achieved`
+            : "Keep going",
       icon: Target,
     },
     { label: "This week", value: "—", hint: "No events", icon: CalendarDays },

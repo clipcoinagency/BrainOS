@@ -84,7 +84,7 @@ export const navigation: NavSection[] = [
         href: "/goals",
         icon: Target,
         description: "Set outcomes and measure progress over time.",
-        status: "planned",
+        status: "available",
       },
       {
         title: "Projects",

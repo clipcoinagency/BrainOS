@@ -115,6 +115,48 @@ export interface Database {
         };
         Relationships: [];
       };
+      goals: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          description: string;
+          status: "active" | "achieved" | "archived";
+          target_value: number;
+          current_value: number;
+          unit: string;
+          target_date: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          description?: string;
+          status?: "active" | "achieved" | "archived";
+          target_value?: number;
+          current_value?: number;
+          unit?: string;
+          target_date?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          description?: string;
+          status?: "active" | "achieved" | "archived";
+          target_value?: number;
+          current_value?: number;
+          unit?: string;
+          target_date?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };
@@ -131,3 +173,5 @@ export type Profile = Tables<"profiles">;
 export type Note = Tables<"notes">;
 export type Task = Tables<"tasks">;
 export type TaskPriority = Task["priority"];
+export type Goal = Tables<"goals">;
+export type GoalStatus = Goal["status"];
