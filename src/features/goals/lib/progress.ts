@@ -1,12 +1,15 @@
 import type { GoalStatus } from "@/lib/supabase/types";
 
 /**
- * Progress toward a goal as a whole percent, clamped to 0–100. Guards a
- * non-positive target (which the DB check constraint forbids, but a stale
- * client cache could still hold one transiently).
+ * Progress toward a goal as a whole percent, clamped to 0–100. Guards both
+ * inputs against non-finite values (the DB check constraints and Zod forbid
+ * them, but a stale optimistic cache could hold one transiently) and a
+ * non-positive target.
  */
 export function getProgressPercent(current: number, target: number): number {
-  if (!Number.isFinite(target) || target <= 0) return 0;
+  if (!Number.isFinite(current) || !Number.isFinite(target) || target <= 0) {
+    return 0;
+  }
   const pct = Math.round((current / target) * 100);
   return Math.min(100, Math.max(0, pct));
 }

@@ -26,6 +26,14 @@ interface ConfirmDialogProps {
   /** Shows a spinner and disables both buttons while a confirm action is in flight. */
   isPending?: boolean;
   onConfirm: () => void;
+  /**
+   * Where focus goes when the dialog closes. Radix's default is to restore
+   * focus to whatever opened the dialog — but if that element was a control
+   * inside a row the confirm action just deleted, it's already gone and focus
+   * falls to `<body>`. Pass a ref to something stable (a heading, the add
+   * field) to land focus there instead.
+   */
+  finalFocusRef?: React.RefObject<HTMLElement | null>;
 }
 
 /**
@@ -47,10 +55,22 @@ export function ConfirmDialog({
   destructive = false,
   isPending = false,
   onConfirm,
+  finalFocusRef,
 }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent
+        onCloseAutoFocus={
+          finalFocusRef
+            ? (event) => {
+                if (finalFocusRef.current) {
+                  event.preventDefault();
+                  finalFocusRef.current.focus();
+                }
+              }
+            : undefined
+        }
+      >
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>

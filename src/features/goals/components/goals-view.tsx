@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useMemo, useRef, useState } from "react";
 import { Loader2, Plus, Search, Target } from "lucide-react";
 import { toast } from "sonner";
 
@@ -38,6 +38,10 @@ export function GoalsView({ initialGoals }: { initialGoals: Goal[] }) {
   const [quickAdd, setQuickAdd] = useState("");
   const { data: goals } = useGoalsQuery(initialGoals);
   const createGoal = useCreateGoal();
+
+  // A stable place to send focus after a delete removes the acted-on card
+  // (and the menu control that opened the confirmation).
+  const quickAddRef = useRef<HTMLInputElement>(null);
 
   // Lifted here (not inside GoalCard) — an optimistic delete removes the goal
   // (and its card) the instant it's confirmed, so a dialog owned by the card
@@ -92,6 +96,7 @@ export function GoalsView({ initialGoals }: { initialGoals: Goal[] }) {
 
       <form onSubmit={handleQuickAdd} className="flex gap-2">
         <Input
+          ref={quickAddRef}
           value={quickAdd}
           onChange={(event) => setQuickAdd(event.target.value)}
           placeholder="Name a goal and press Enter…"
@@ -174,6 +179,7 @@ export function GoalsView({ initialGoals }: { initialGoals: Goal[] }) {
         onOpenChange={(open) => {
           if (!open) setDeleteTarget(null);
         }}
+        finalFocusRef={quickAddRef}
       />
     </div>
   );

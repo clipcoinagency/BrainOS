@@ -142,31 +142,38 @@ export function GoalCard({ goal, onEdit, onRequestDelete }: GoalCardProps) {
 
       <Progress value={percent} aria-label={`${title} progress`} />
 
-      <div className="text-muted-foreground flex items-center gap-2 text-xs">
+      {/* Not disabled while the mutation is pending: disabling a *focused*
+          button force-blurs it (deterministic browser behavior), dropping a
+          keyboard user to the top of the page after every step. The shared
+          mutation `scope` already serializes rapid clicks and `onMutate`
+          advances the bar optimistically, so an `isPending` guard buys no
+          ordering safety — see the same lesson for the tasks quick-add. */}
+      <div
+        className="text-muted-foreground flex items-center gap-2 text-xs"
+        aria-busy={updateProgress.isPending}
+      >
         <Button
           variant="ghost"
           size="icon-xs"
-          aria-label="Decrease progress"
-          disabled={goal.current_value <= 0 || updateProgress.isPending}
+          aria-label={`Decrease progress for "${title}"`}
+          disabled={goal.current_value <= 0}
           onClick={() => setProgress(step(goal.current_value, -1))}
         >
           <Minus className="size-3" />
         </Button>
-        <span className="tabular-nums">
+        <span className="tabular-nums" aria-live="polite">
           {formatGoalValue(goal.current_value)} /{" "}
           {formatGoalValue(goal.target_value)}
-          {goal.unit ? ` ${goal.unit}` : ""}
+          {goal.unit ? ` ${goal.unit}` : ""} · {percent}%
         </span>
         <Button
           variant="ghost"
           size="icon-xs"
-          aria-label="Increase progress"
-          disabled={updateProgress.isPending}
+          aria-label={`Increase progress for "${title}"`}
           onClick={() => setProgress(step(goal.current_value, 1))}
         >
           <Plus className="size-3" />
         </Button>
-        <span className="ml-auto tabular-nums">{percent}%</span>
       </div>
 
       {targetDate ? (

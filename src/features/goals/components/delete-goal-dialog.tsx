@@ -12,6 +12,9 @@ interface DeleteGoalDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDeleted?: () => void;
+  /** Where focus lands after the dialog closes — the deleted goal's card
+   * (and the menu control that opened this) is gone by then. */
+  finalFocusRef?: React.RefObject<HTMLElement | null>;
 }
 
 /**
@@ -24,6 +27,7 @@ export function DeleteGoalDialog({
   open,
   onOpenChange,
   onDeleted,
+  finalFocusRef,
 }: DeleteGoalDialogProps) {
   const deleteGoal = useDeleteGoal();
 
@@ -62,6 +66,7 @@ export function DeleteGoalDialog({
       destructive
       isPending={deleteGoal.isPending}
       onConfirm={handleConfirm}
+      finalFocusRef={finalFocusRef}
     />
   );
 }
