@@ -36,12 +36,16 @@ function CommandDialog({
   children,
   className,
   showCloseButton = false,
+  shouldFilter,
   ...props
 }: React.ComponentProps<typeof Dialog> & {
   title?: string;
   description?: string;
   className?: string;
   showCloseButton?: boolean;
+  /** Forwarded to the cmdk root. Set `false` when a consumer renders its own
+   * server-driven results and filters them itself. */
+  shouldFilter?: boolean;
 }) {
   return (
     <Dialog {...props}>
@@ -56,7 +60,12 @@ function CommandDialog({
         )}
         showCloseButton={showCloseButton}
       >
-        {children}
+        {/* CommandInput/CommandList/CommandGroup/CommandItem are cmdk
+            primitives that read their filtering/selection state from a
+            <Command> (cmdk root) ancestor via context — without it they
+            throw ("Cannot read properties of undefined (reading
+            'subscribe')") the instant the dialog opens. */}
+        <Command shouldFilter={shouldFilter}>{children}</Command>
       </DialogContent>
     </Dialog>
   );
