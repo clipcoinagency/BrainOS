@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { openCommandMenu } from "@/components/layout/command-menu";
+import { openQuickCapture } from "@/components/layout/quick-capture-dialog";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { UserMenu, type ShellUser } from "@/components/layout/user-menu";
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,7 @@ export function AppTopbar({ user, authenticated }: AppTopbarProps) {
         <Button
           size="sm"
           className="hidden sm:inline-flex"
-          onClick={() => toast("Quick capture — coming soon")}
+          onClick={openQuickCapture}
         >
           <Plus className="size-4" />
           Capture

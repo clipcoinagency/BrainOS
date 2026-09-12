@@ -37,9 +37,20 @@ Cross-cutting capabilities every module depends on. Build these before modules.
       (light/dark/system, role="radiogroup" like the Journal mood picker),
       sign out. No new table or migration — reuses `profiles` from Phase 1's
       `init` migration.
-- ⬜ **Quick Capture** — global capture action (wire the ⌘K / Capture button)
-- ⬜ **Global Search** — search across modules
-- ⬜ **Command palette actions** — create/act, not just navigate
+- ✅ **Quick Capture** — the topbar Capture button and the palette's "Quick
+      capture" item both open one global dialog (⌘Enter to save); content is
+      saved as a new note without navigating away, so capturing doesn't
+      interrupt whatever page you were on.
+- ✅ **Global Search** — `searchWorkspace()` matches titles across notes,
+      tasks, goals, and projects, and content for journal entries (which have
+      no title), scoped to the signed-in user, 5 results per type. Wired into
+      the command palette as a live "Results" group once the query is 2+
+      characters. Tasks/goals results link to their list page rather than a
+      specific item, since neither has a per-item route yet.
+- ✅ **Command palette actions** — "New note", "New project", and "New
+      journal entry" create-and-navigate in one step, alongside "Quick
+      capture". No equivalent exists yet for tasks/goals (both are created
+      via quick-add on their list page, not a blank-item flow).
 
 ## Phase 2 — Core workspace modules 🚧
 

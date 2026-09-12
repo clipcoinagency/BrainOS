@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppTopbar } from "@/components/layout/app-topbar";
 import { CommandMenu } from "@/components/layout/command-menu";
+import { QuickCaptureDialog } from "@/components/layout/quick-capture-dialog";
 import type { ShellUser } from "@/components/layout/user-menu";
 import { getUser } from "@/features/auth/queries";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -66,8 +67,10 @@ export default async function AppLayout({
           <div className="mx-auto w-full max-w-6xl">{children}</div>
         </main>
       </div>
-      {/* Global command palette — mounted once for the whole shell. */}
+      {/* Global command palette and quick-capture dialog — each mounted once
+          for the whole shell, opened from anywhere via a DOM event. */}
       <CommandMenu />
+      <QuickCaptureDialog />
     </div>
   );
 }
