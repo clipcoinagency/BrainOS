@@ -2,12 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 
-import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { z } from "zod";
 
-import { isSupabaseConfigured } from "@/lib/env";
-import { createClient } from "@/lib/supabase/server";
-import type { Database, Goal } from "@/lib/supabase/types";
+import { requireUser } from "@/lib/supabase/require-user";
+import type { Goal } from "@/lib/supabase/types";
 
 import { createGoalSchema, updateGoalSchema } from "./schemas";
 import type { CreateGoalInput, UpdateGoalInput } from "./schemas";
@@ -16,9 +14,6 @@ import { getGoal, listGoals } from "./queries";
 /** Discriminated result returned to the client. */
 export type GoalResult<T> = { data: T } | { error: string };
 
-const NOT_CONFIGURED =
-  "Goals require a connected database. Add your Supabase credentials to .env.local.";
-const NOT_SIGNED_IN = "You must be signed in.";
 const NOT_FOUND = "Goal not found.";
 
 // Server Actions are reachable by any authenticated browser (devtools, a
@@ -26,27 +21,6 @@ const NOT_FOUND = "Goal not found.";
 // malformed value fails with our own generic message instead of a raw
 // Postgres type-cast error. Mirrors the notes/tasks features.
 const goalIdSchema = z.string().uuid();
-
-type UserContext =
-  { error: string } | { supabase: SupabaseClient<Database>; user: User };
-
-/** Resolve the authenticated Supabase client + user, or a friendly error. */
-async function requireUser(): Promise<UserContext> {
-  if (!isSupabaseConfigured) {
-    return { error: NOT_CONFIGURED };
-  }
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: NOT_SIGNED_IN };
-  }
-
-  return { supabase, user };
-}
 
 function revalidateGoals() {
   revalidatePath("/goals");
@@ -72,7 +46,7 @@ export async function getGoalAction(id: string): Promise<Goal | null> {
 export async function createGoal(
   input: CreateGoalInput,
 ): Promise<GoalResult<Goal>> {
-  const ctx = await requireUser();
+  const ctx = await requireUser("Goals");
   if ("error" in ctx) return { error: ctx.error };
 
   const parsed = createGoalSchema.safeParse(input);
@@ -104,7 +78,7 @@ export async function updateGoal(
 ): Promise<GoalResult<Goal>> {
   if (!goalIdSchema.safeParse(id).success) return { error: NOT_FOUND };
 
-  const ctx = await requireUser();
+  const ctx = await requireUser("Goals");
   if ("error" in ctx) return { error: ctx.error };
 
   const parsed = updateGoalSchema.safeParse(input);
@@ -177,7 +151,7 @@ export async function deleteGoal(
 ): Promise<GoalResult<{ id: string }>> {
   if (!goalIdSchema.safeParse(id).success) return { error: NOT_FOUND };
 
-  const ctx = await requireUser();
+  const ctx = await requireUser("Goals");
   if ("error" in ctx) return { error: ctx.error };
 
   const { supabase, user } = ctx;

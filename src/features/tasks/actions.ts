@@ -2,12 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 
-import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { z } from "zod";
 
-import { isSupabaseConfigured } from "@/lib/env";
-import { createClient } from "@/lib/supabase/server";
-import type { Database, Task } from "@/lib/supabase/types";
+import { requireUser } from "@/lib/supabase/require-user";
+import type { Task } from "@/lib/supabase/types";
 
 import { createTaskSchema, updateTaskSchema } from "./schemas";
 import type { CreateTaskInput, UpdateTaskInput } from "./schemas";
@@ -16,9 +14,6 @@ import { getTask, listTasks } from "./queries";
 /** Discriminated result returned to the client. */
 export type TaskResult<T> = { data: T } | { error: string };
 
-const NOT_CONFIGURED =
-  "Tasks require a connected database. Add your Supabase credentials to .env.local.";
-const NOT_SIGNED_IN = "You must be signed in.";
 const NOT_FOUND = "Task not found.";
 
 // Server Actions are reachable by any authenticated browser (devtools, a
@@ -26,27 +21,6 @@ const NOT_FOUND = "Task not found.";
 // malformed value fails with our own generic message instead of a raw
 // Postgres type-cast error. Mirrors the notes feature; see its actions.ts.
 const taskIdSchema = z.string().uuid();
-
-type UserContext =
-  { error: string } | { supabase: SupabaseClient<Database>; user: User };
-
-/** Resolve the authenticated Supabase client + user, or a friendly error. */
-async function requireUser(): Promise<UserContext> {
-  if (!isSupabaseConfigured) {
-    return { error: NOT_CONFIGURED };
-  }
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: NOT_SIGNED_IN };
-  }
-
-  return { supabase, user };
-}
 
 function revalidateTasks() {
   revalidatePath("/tasks");
@@ -72,7 +46,7 @@ export async function getTaskAction(id: string): Promise<Task | null> {
 export async function createTask(
   input: CreateTaskInput,
 ): Promise<TaskResult<Task>> {
-  const ctx = await requireUser();
+  const ctx = await requireUser("Tasks");
   if ("error" in ctx) return { error: ctx.error };
 
   const parsed = createTaskSchema.safeParse(input);
@@ -104,7 +78,7 @@ export async function updateTask(
 ): Promise<TaskResult<Task>> {
   if (!taskIdSchema.safeParse(id).success) return { error: NOT_FOUND };
 
-  const ctx = await requireUser();
+  const ctx = await requireUser("Tasks");
   if ("error" in ctx) return { error: ctx.error };
 
   const parsed = updateTaskSchema.safeParse(input);
@@ -170,7 +144,7 @@ export async function deleteTask(
 ): Promise<TaskResult<{ id: string }>> {
   if (!taskIdSchema.safeParse(id).success) return { error: NOT_FOUND };
 
-  const ctx = await requireUser();
+  const ctx = await requireUser("Tasks");
   if ("error" in ctx) return { error: ctx.error };
 
   const { supabase, user } = ctx;

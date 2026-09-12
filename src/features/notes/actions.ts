@@ -2,12 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 
-import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { z } from "zod";
 
-import { isSupabaseConfigured } from "@/lib/env";
-import { createClient } from "@/lib/supabase/server";
-import type { Database, Note } from "@/lib/supabase/types";
+import { requireUser } from "@/lib/supabase/require-user";
+import type { Note } from "@/lib/supabase/types";
 
 import { createNoteSchema, updateNoteSchema } from "./schemas";
 import type { CreateNoteInput, UpdateNoteInput } from "./schemas";
@@ -16,9 +14,6 @@ import { getNote, listNotes } from "./queries";
 /** Discriminated result returned to the client. */
 export type NoteResult<T> = { data: T } | { error: string };
 
-const NOT_CONFIGURED =
-  "Notes require a connected database. Add your Supabase credentials to .env.local.";
-const NOT_SIGNED_IN = "You must be signed in.";
 const NOT_FOUND = "Note not found.";
 
 // `id` always originates from a route param or another action's own return
@@ -27,27 +22,6 @@ const NOT_FOUND = "Note not found.";
 // Validating the shape here turns a malformed id into our own generic
 // message instead of a raw Postgres type-cast error surfacing to the client.
 const noteIdSchema = z.string().uuid();
-
-type UserContext =
-  { error: string } | { supabase: SupabaseClient<Database>; user: User };
-
-/** Resolve the authenticated Supabase client + user, or a friendly error. */
-async function requireUser(): Promise<UserContext> {
-  if (!isSupabaseConfigured) {
-    return { error: NOT_CONFIGURED };
-  }
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: NOT_SIGNED_IN };
-  }
-
-  return { supabase, user };
-}
 
 function revalidateNotes(id?: string) {
   revalidatePath("/notes");
@@ -73,7 +47,7 @@ export async function getNoteAction(id: string): Promise<Note | null> {
 export async function createNote(
   input: CreateNoteInput = {},
 ): Promise<NoteResult<Note>> {
-  const ctx = await requireUser();
+  const ctx = await requireUser("Notes");
   if ("error" in ctx) return { error: ctx.error };
 
   const parsed = createNoteSchema.safeParse(input);
@@ -103,7 +77,7 @@ export async function updateNote(
 ): Promise<NoteResult<Note>> {
   if (!noteIdSchema.safeParse(id).success) return { error: NOT_FOUND };
 
-  const ctx = await requireUser();
+  const ctx = await requireUser("Notes");
   if ("error" in ctx) return { error: ctx.error };
 
   const parsed = updateNoteSchema.safeParse(input);
@@ -150,7 +124,7 @@ export async function deleteNote(
 ): Promise<NoteResult<{ id: string }>> {
   if (!noteIdSchema.safeParse(id).success) return { error: NOT_FOUND };
 
-  const ctx = await requireUser();
+  const ctx = await requireUser("Notes");
   if ("error" in ctx) return { error: ctx.error };
 
   const { supabase, user } = ctx;
