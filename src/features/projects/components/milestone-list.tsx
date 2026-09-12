@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ListChecks, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -34,6 +34,12 @@ export function MilestoneList({
   const [quickAdd, setQuickAdd] = useState("");
   const { data: milestones } = useMilestonesQuery(projectId, initialMilestones);
   const createMilestone = useCreateMilestone(projectId);
+
+  // A stable place to send focus when a milestone row (and its delete
+  // button) unmounts after the user deletes it — milestones have no
+  // confirmation dialog, so there's no ConfirmDialog/finalFocusRef to lean
+  // on the way project/task/goal/note deletes do.
+  const quickAddRef = useRef<HTMLInputElement>(null);
 
   const sorted = useMemo(
     () => [...milestones].sort(compareMilestones),
@@ -79,6 +85,7 @@ export function MilestoneList({
 
       <form onSubmit={handleQuickAdd} className="flex gap-2">
         <Input
+          ref={quickAddRef}
           value={quickAdd}
           onChange={(event) => setQuickAdd(event.target.value)}
           placeholder="Add a milestone and press Enter…"
@@ -110,6 +117,7 @@ export function MilestoneList({
               key={milestone.id}
               projectId={projectId}
               milestone={milestone}
+              finalFocusRef={quickAddRef}
             />
           ))}
         </div>

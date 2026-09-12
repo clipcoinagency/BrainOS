@@ -181,8 +181,13 @@ export async function listMilestonesAction(
  * successfully insert a milestone with a `project_id` pointing at a project
  * they don't own. That insert would still carry the caller's own `user_id`
  * (so RLS lets them see the resulting row, and it wouldn't leak the other
- * project's data), but it corrupts the app's own referential integrity —
- * this check is what actually keeps a milestone's project_id trustworthy.
+ * project's data), but it corrupts the app's own referential integrity.
+ * This check establishes a correct `project_id` at creation; a DB trigger
+ * (`20260912000002_lock_milestone_project_id.sql`) keeps it that way by
+ * making the column immutable afterward — an adversarial review found that,
+ * without it, a user could later re-parent their own milestone onto a
+ * project they don't own via a direct PostgREST call, since the UPDATE
+ * policy (like every table's) only re-checks `user_id`, not `project_id`.
  */
 export async function createMilestone(
   projectId: string,

@@ -16,9 +16,19 @@ import {
 interface MilestoneItemProps {
   projectId: string;
   milestone: Milestone;
+  /** Focused before this row's optimistic delete unmounts it — with no
+   * confirmation dialog to hand focus off via `finalFocusRef`, this row's own
+   * delete button would otherwise be removed while still focused, dropping
+   * the browser to `<body>` (per the HTML spec for a removed focused
+   * element). */
+  finalFocusRef: React.RefObject<HTMLElement | null>;
 }
 
-export function MilestoneItem({ projectId, milestone }: MilestoneItemProps) {
+export function MilestoneItem({
+  projectId,
+  milestone,
+  finalFocusRef,
+}: MilestoneItemProps) {
   const toggleComplete = useToggleMilestoneComplete(projectId, milestone.id);
   const deleteMilestone = useDeleteMilestone(projectId);
 
@@ -35,7 +45,12 @@ export function MilestoneItem({ projectId, milestone }: MilestoneItemProps) {
     // No confirmation dialog: a milestone is a small, easily-retyped checklist
     // line, unlike the project itself — consistent with how deleting is a
     // lighter-weight action here than everywhere else a delete removes a
-    // primary entity (notes, tasks, goals, projects all confirm).
+    // primary entity (notes, tasks, goals, projects all confirm). Move focus
+    // BEFORE mutating: the optimistic update in useDeleteMilestone's onMutate
+    // removes this row (and the button focus is currently on) as soon as
+    // .mutate() runs, synchronously — focusing the fallback target first
+    // means it's already the browser's focus by the time that happens.
+    finalFocusRef.current?.focus();
     deleteMilestone.mutate(milestone.id, {
       onSuccess: (result) => {
         if ("error" in result) toast.error(result.error);

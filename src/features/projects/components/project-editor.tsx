@@ -100,7 +100,13 @@ export function ProjectEditor({ project }: { project: Project }) {
           if ("error" in result) {
             setStatus(previous);
             toast.error(result.error);
+            return;
           }
+          // Every successful save through this `updateProject` instance
+          // updates the same "last saved" bookkeeping — otherwise the
+          // indicator falls back to `project.updated_at`, which is the
+          // stale value from page load, not this save.
+          setLastSavedAt(new Date());
         },
         onError: () => {
           setStatus(previous);
@@ -121,7 +127,9 @@ export function ProjectEditor({ project }: { project: Project }) {
           if ("error" in result) {
             setTargetDate(previous);
             toast.error(result.error);
+            return;
           }
+          setLastSavedAt(new Date());
         },
         onError: () => {
           setTargetDate(previous);
