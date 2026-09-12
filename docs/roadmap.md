@@ -126,7 +126,17 @@ The daily drivers. Suggested delivery order:
       Notes' own "rich text is a future enhancement").
 - ⬜ **Files** — Supabase Storage, upload & browse
 - ⬜ **Calendar** — unified schedule across modules
-- ⬜ **Habits** — streaks and routines
+- ✅ **Habits** — quick add, per-day completion toggle, current streak,
+      7-day dot strip; edit dialog (title/description) matching the
+      tasks/goals dialog-editing pattern (no dedicated detail route). Two
+      tables (`habits` + `habit_logs`, one log row per day), same shape as
+      Projects/milestones: a log's `user_id` is denormalized so every table
+      keeps the identical RLS policy shape, and the app layer verifies a
+      log's `habit_id` belongs to the caller before inserting it (RLS alone
+      wouldn't catch a client attaching a log to someone else's habit id).
+      Applied the journal feature's timezone lesson from the start: "today"
+      for a log is always computed client-side and sent explicitly, bounded
+      server-side to within one day of the server's UTC clock.
 
 ## Phase 4 — Business & intelligence ⬜
 

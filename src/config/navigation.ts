@@ -136,7 +136,7 @@ export const navigation: NavSection[] = [
         href: "/habits",
         icon: Activity,
         description: "Build streaks and track daily routines.",
-        status: "planned",
+        status: "available",
       },
       {
         title: "Meetings",

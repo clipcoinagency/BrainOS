@@ -41,6 +41,8 @@ Open **SQL Editor** in the Supabase dashboard and run each migration in
 8. [`20260912000004_knowledge.sql`](migrations/20260912000004_knowledge.sql) —
    `knowledge_articles` (no separate links table — `[[title]]` references are
    resolved from `content` at read time)
+9. [`20260912000005_habits.sql`](migrations/20260912000005_habits.sql) —
+   `habits`, `habit_logs` (one row per day completed)
 
 ### Option B — Supabase CLI (recommended for teams)
 
