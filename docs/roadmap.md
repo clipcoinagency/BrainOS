@@ -65,7 +65,25 @@ The daily drivers. Suggested delivery order:
       status (active / achieved / archived), unit + target date, edit dialog,
       delete (confirmed), search; `goals` table with RLS. Same patterns as
       Tasks. Built before Projects at the user's request.
-4. ⬜ **Projects** — group work, milestones
+4. ✅ **Projects** — list (`/projects`, quick add, search, status) + detail
+      page (`/projects/[id]`, debounced-autosave title/description like
+      Notes, immediate-save status/target date) with a milestone checklist
+      (quick add, toggle, delete — no confirmation on milestones, unlike
+      every primary entity elsewhere, since they're small and trivially
+      re-added). First two-table feature: `projects` + `project_milestones`,
+      each with the same simple `auth.uid() = user_id` RLS policy (milestones
+      carry their own denormalized `user_id` rather than a join/EXISTS policy
+      against `projects`) — the app layer still verifies a milestone's
+      `project_id` actually belongs to the caller before insert, since RLS
+      alone wouldn't catch a client attaching a milestone to someone else's
+      project id. Applied every prior lesson from the start, including one
+      found while building it: a status `<Select>`/date `<Input>` bound
+      directly to the Server Component's `project` prop instead of local
+      state — the prop only refreshes on a full page reload, so the control
+      would silently reflect the *pre-change* value after a successful save.
+      Preceded by extracting a shared `requireUser()` helper (`src/lib/
+      supabase/require-user.ts`) — Notes/Tasks/Goals each had a byte-for-byte
+      copy; Projects made it the 4th.
 5. ⬜ **Journal** — daily entries
 
 ## Phase 3 — Knowledge & planning ⬜

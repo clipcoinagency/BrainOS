@@ -157,6 +157,69 @@ export interface Database {
         };
         Relationships: [];
       };
+      projects: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          description: string;
+          status: "active" | "completed" | "archived";
+          target_date: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          description?: string;
+          status?: "active" | "completed" | "archived";
+          target_date?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          description?: string;
+          status?: "active" | "completed" | "archived";
+          target_date?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      project_milestones: {
+        Row: {
+          id: string;
+          project_id: string;
+          user_id: string;
+          title: string;
+          is_completed: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          project_id: string;
+          user_id: string;
+          title: string;
+          is_completed?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          project_id?: string;
+          user_id?: string;
+          title?: string;
+          is_completed?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };
@@ -175,3 +238,6 @@ export type Task = Tables<"tasks">;
 export type TaskPriority = Task["priority"];
 export type Goal = Tables<"goals">;
 export type GoalStatus = Goal["status"];
+export type Project = Tables<"projects">;
+export type ProjectStatus = Project["status"];
+export type Milestone = Tables<"project_milestones">;

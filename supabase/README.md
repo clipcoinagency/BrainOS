@@ -31,6 +31,8 @@ Open **SQL Editor** in the Supabase dashboard and run each migration in
 2. [`20260907000001_notes.sql`](migrations/20260907000001_notes.sql) — `notes`
 3. [`20260907000002_tasks.sql`](migrations/20260907000002_tasks.sql) — `tasks`
 4. [`20260910000001_goals.sql`](migrations/20260910000001_goals.sql) — `goals`
+5. [`20260912000001_projects.sql`](migrations/20260912000001_projects.sql) —
+   `projects`, `project_milestones`
 
 ### Option B — Supabase CLI (recommended for teams)
 

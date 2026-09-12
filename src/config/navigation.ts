@@ -91,7 +91,7 @@ export const navigation: NavSection[] = [
         href: "/projects",
         icon: FolderKanban,
         description: "Organize work into projects and milestones.",
-        status: "planned",
+        status: "available",
       },
       {
         title: "Journal",
