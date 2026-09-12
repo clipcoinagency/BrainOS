@@ -98,7 +98,7 @@ export const navigation: NavSection[] = [
         href: "/journal",
         icon: BookOpen,
         description: "Daily entries and reflective writing.",
-        status: "planned",
+        status: "available",
       },
     ],
   },

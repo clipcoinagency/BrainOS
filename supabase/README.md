@@ -36,6 +36,8 @@ Open **SQL Editor** in the Supabase dashboard and run each migration in
 6. [`20260912000002_lock_milestone_project_id.sql`](migrations/20260912000002_lock_milestone_project_id.sql) —
    closes an RLS gap: makes `project_milestones.project_id` immutable after
    creation
+7. [`20260912000003_journal.sql`](migrations/20260912000003_journal.sql) —
+   `journal_entries`, one per user per day (`unique (user_id, entry_date)`)
 
 ### Option B — Supabase CLI (recommended for teams)
 

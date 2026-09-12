@@ -84,7 +84,15 @@ The daily drivers. Suggested delivery order:
       Preceded by extracting a shared `requireUser()` helper (`src/lib/
       supabase/require-user.ts`) — Notes/Tasks/Goals each had a byte-for-byte
       copy; Projects made it the 4th.
-5. ⬜ **Journal** — daily entries
+5. ✅ **Journal** — one entry per calendar day (`journal_entries`, unique on
+      `(user_id, entry_date)`), "New entry" opens today's entry if it already
+      exists rather than erroring on the constraint, mood picker (5 levels,
+      immediate save) + content (debounced autosave like Notes), delete
+      (confirmed), search. Simplest module yet — a single table, no
+      dialog-based editing — but still applied every review lesson learned so
+      far from the start: per-entry mutation scoping, list-owned delete
+      dialog, local mood state mirrored from the server prop, and
+      `lastSavedAt` updated from both the mood and content save paths.
 
 ## Phase 3 — Knowledge & planning ⬜
 
