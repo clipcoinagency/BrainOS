@@ -119,7 +119,10 @@ export function JournalEntryEditor({ entry }: { entry: JournalEntry }) {
         </Button>
 
         <div className="flex items-center gap-1">
-          <span className="text-muted-foreground mr-1 flex items-center gap-1 text-xs">
+          <span
+            aria-live="polite"
+            className="text-muted-foreground mr-1 flex items-center gap-1 text-xs"
+          >
             {updateEntry.isPending ? (
               <Loader2 className="size-3 animate-spin" />
             ) : !dirty ? (
@@ -144,7 +147,11 @@ export function JournalEntryEditor({ entry }: { entry: JournalEntry }) {
         </h1>
       </div>
 
-      <div role="group" aria-label="Mood" className="flex items-center gap-1.5">
+      <div
+        role="radiogroup"
+        aria-label="Mood"
+        className="flex items-center gap-1.5"
+      >
         {MOODS.map((value) => {
           const Icon = MOOD_ICON[value];
           const selected = mood === value;
@@ -154,8 +161,9 @@ export function JournalEntryEditor({ entry }: { entry: JournalEntry }) {
               type="button"
               variant="ghost"
               size="icon"
+              role="radio"
+              aria-checked={selected}
               aria-label={MOOD_LABEL[value]}
-              aria-pressed={selected}
               onClick={() => handleMoodChange(value)}
               className={cn(
                 "border",

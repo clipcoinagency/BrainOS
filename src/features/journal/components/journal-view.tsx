@@ -46,26 +46,30 @@ export function JournalView({
   }, [filtered]);
 
   function handleNewEntry() {
-    // "New entry" means "today's entry" — if it already exists, open it
-    // instead of trying (and failing, on the unique constraint) to create a
-    // second one for the same day.
-    const today = todayIsoDate();
-    const existing = entries.find((entry) => entry.entry_date === today);
-    if (existing) {
-      router.push(`/journal/${existing.id}`);
-      return;
-    }
-
-    createEntry.mutate(undefined, {
-      onSuccess: (result) => {
-        if ("error" in result) {
-          toast.error(result.error);
-          return;
-        }
-        router.push(`/journal/${result.data.id}`);
+    // "New entry" means "today's entry". Always defer to the server's
+    // create-or-return-existing logic (createJournalEntry) rather than
+    // checking this list's TanStack Query cache ourselves first — that cache
+    // can be stale (another tab/device deleted today's entry, or simply
+    // hasn't refetched), and navigating straight to a cached id that no
+    // longer exists would dead-end on a 404 instead of creating one.
+    //
+    // `entryDate` is computed HERE, in the browser, and sent explicitly:
+    // computing "today" inside the Server Action instead would use the
+    // server process's own timezone, which can disagree with the user's for
+    // hours around midnight and silently mis-date the entry.
+    createEntry.mutate(
+      { entryDate: todayIsoDate() },
+      {
+        onSuccess: (result) => {
+          if ("error" in result) {
+            toast.error(result.error);
+            return;
+          }
+          router.push(`/journal/${result.data.id}`);
+        },
+        onError: () => toast.error("Failed to create journal entry."),
       },
-      onError: () => toast.error("Failed to create journal entry."),
-    });
+    );
   }
 
   return (

@@ -22,7 +22,7 @@ export const journalKeys = {
 /** One TanStack Query mutation `scope` per entry, shared by every mutation
  * that writes to that entry (autosave, mood change) — see `use-notes.ts` for
  * why same-entity writes need to be serialized this way. */
-function entryScope(id: string) {
+function journalEntryScope(id: string) {
   return { id: `journal-entry-${id}` };
 }
 
@@ -58,7 +58,7 @@ export function useCreateJournalEntry() {
 /**
  * Update one entry's mood/content. Scoped to `entryId` so overlapping saves
  * for the SAME entry (e.g. a slow autosave still in flight when the next one
- * fires) are serialized instead of racing — see {@link entryScope}. A
+ * fires) are serialized instead of racing — see {@link journalEntryScope}. A
  * separate `JournalEntryEditor` instance (and its `entryId`) is mounted per
  * entry, so this scoping is naturally per-entry.
  */
@@ -66,7 +66,7 @@ export function useUpdateJournalEntry(entryId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    scope: entryScope(entryId),
+    scope: journalEntryScope(entryId),
     mutationFn: (input: UpdateJournalEntryInput) =>
       updateJournalEntry(entryId, input),
     onSuccess: (result) => {

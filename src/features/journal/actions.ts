@@ -25,7 +25,7 @@ const NOT_FOUND = "Journal entry not found.";
 // browser via devtools or a hand-crafted request, not just through our UI.
 // Validating the shape here turns a malformed id into our own generic
 // message instead of a raw Postgres type-cast error surfacing to the client.
-const entryIdSchema = z.string().uuid();
+const journalEntryIdSchema = z.string().uuid();
 
 // Postgres unique-violation error code, raised by
 // `journal_entries_one_per_day` when a second insert targets a day that
@@ -52,12 +52,21 @@ export async function listJournalEntriesAction(): Promise<JournalEntry[]> {
 export async function getJournalEntryAction(
   id: string,
 ): Promise<JournalEntry | null> {
-  if (!entryIdSchema.safeParse(id).success) return null;
+  if (!journalEntryIdSchema.safeParse(id).success) return null;
   return getJournalEntry(id);
 }
 
 /**
- * Create a journal entry for a day (today, by default) and return it.
+ * Create a journal entry for a day and return it. `entryDate` should always
+ * be supplied by the caller as the browser's own local "today" (see
+ * `todayIsoDate()`) — the fallback to a server-computed `todayIsoDate()`
+ * below only covers a caller that omits it entirely (e.g. a direct call to
+ * this Server Action outside the shipped UI), since computing "today" inside
+ * the server process would use the server's own timezone, not the user's.
+ * `entryDateSchema` bounds any supplied date to within one day of the
+ * server's UTC date, which comfortably covers every real timezone's "today"
+ * while still rejecting an arbitrary backdated/postdated `entryDate` from a
+ * hand-crafted request.
  *
  * At most one entry can exist per user per day (enforced by the
  * `journal_entries_one_per_day` unique constraint, not just app logic — this
@@ -80,34 +89,51 @@ export async function createJournalEntry(
 
   const { supabase, user } = ctx;
   const entryDate = parsed.data.entryDate ?? todayIsoDate();
+  const row = {
+    user_id: user.id,
+    entry_date: entryDate,
+    mood: parsed.data.mood,
+    content: parsed.data.content ?? "",
+  };
 
   const { data, error } = await supabase
     .from("journal_entries")
-    .insert({
-      user_id: user.id,
-      entry_date: entryDate,
-      mood: parsed.data.mood,
-      content: parsed.data.content ?? "",
-    })
+    .insert(row)
     .select()
     .single();
 
-  if (error) {
-    if (error.code === UNIQUE_VIOLATION) {
-      const { data: existing } = await supabase
-        .from("journal_entries")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("entry_date", entryDate)
-        .maybeSingle();
-
-      if (existing) return { data: existing };
-    }
-    return { error: "Failed to create journal entry." };
+  if (!error) {
+    revalidateJournal();
+    return { data };
   }
 
-  revalidateJournal();
-  return { data };
+  if (error.code === UNIQUE_VIOLATION) {
+    const { data: existing } = await supabase
+      .from("journal_entries")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("entry_date", entryDate)
+      .maybeSingle();
+
+    if (existing) return { data: existing };
+
+    // The conflicting row was deleted between our failed insert and the
+    // re-query above (e.g. another tab deleted today's entry in that
+    // instant) — the day is free again, so retry once instead of surfacing a
+    // spurious error for what is now an ordinary creation.
+    const retry = await supabase
+      .from("journal_entries")
+      .insert(row)
+      .select()
+      .single();
+
+    if (!retry.error) {
+      revalidateJournal();
+      return { data: retry.data };
+    }
+  }
+
+  return { error: "Failed to create journal entry." };
 }
 
 /** Update an entry's mood and/or content. */
@@ -115,7 +141,7 @@ export async function updateJournalEntry(
   id: string,
   input: UpdateJournalEntryInput,
 ): Promise<JournalResult<JournalEntry>> {
-  if (!entryIdSchema.safeParse(id).success) return { error: NOT_FOUND };
+  if (!journalEntryIdSchema.safeParse(id).success) return { error: NOT_FOUND };
 
   const ctx = await requireUser("Journal entries");
   if ("error" in ctx) return { error: ctx.error };
@@ -155,7 +181,7 @@ export async function updateJournalEntry(
 export async function deleteJournalEntry(
   id: string,
 ): Promise<JournalResult<{ id: string }>> {
-  if (!entryIdSchema.safeParse(id).success) return { error: NOT_FOUND };
+  if (!journalEntryIdSchema.safeParse(id).success) return { error: NOT_FOUND };
 
   const ctx = await requireUser("Journal entries");
   if ("error" in ctx) return { error: ctx.error };
