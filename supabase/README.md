@@ -38,6 +38,9 @@ Open **SQL Editor** in the Supabase dashboard and run each migration in
    creation
 7. [`20260912000003_journal.sql`](migrations/20260912000003_journal.sql) —
    `journal_entries`, one per user per day (`unique (user_id, entry_date)`)
+8. [`20260912000004_knowledge.sql`](migrations/20260912000004_knowledge.sql) —
+   `knowledge_articles` (no separate links table — `[[title]]` references are
+   resolved from `content` at read time)
 
 ### Option B — Supabase CLI (recommended for teams)
 

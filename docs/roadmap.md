@@ -110,9 +110,20 @@ The daily drivers. Suggested delivery order:
       dialog, local mood state mirrored from the server prop, and
       `lastSavedAt` updated from both the mood and content save paths.
 
-## Phase 3 — Knowledge & planning ⬜
+## Phase 3 — Knowledge & planning 🚧
 
-- ⬜ **Knowledge Base** — structured wiki, linking/backlinks
+- ✅ **Knowledge Base** — list + editor (`/knowledge`, `/knowledge/[id]`),
+      debounced autosave like Notes; `[[Title]]` wiki-links are app-layer, not
+      a schema feature — a link is a title substring inside `content`, and
+      "linked from" (backlinks) is computed with an ILIKE query at read time
+      rather than a separate links table. The editor shows both directions:
+      "Links to" resolves this article's own `[[Title]]` references against
+      every other article (unresolved titles still show, without a link, so
+      the author can see what isn't created yet), "Linked from" lists other
+      articles that reference this one. **Known v1 scope limit:** links are
+      plain text in the textarea, not rendered inline as clickable text
+      while editing (that needs a markdown/wiki preview pane, deferred like
+      Notes' own "rich text is a future enhancement").
 - ⬜ **Files** — Supabase Storage, upload & browse
 - ⬜ **Calendar** — unified schedule across modules
 - ⬜ **Habits** — streaks and routines

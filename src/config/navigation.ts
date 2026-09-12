@@ -110,7 +110,7 @@ export const navigation: NavSection[] = [
         href: "/knowledge",
         icon: Library,
         description: "A structured wiki for durable knowledge.",
-        status: "planned",
+        status: "available",
       },
       {
         title: "Files",

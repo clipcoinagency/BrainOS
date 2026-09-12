@@ -250,6 +250,33 @@ export interface Database {
         };
         Relationships: [];
       };
+      knowledge_articles: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          content: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title?: string;
+          content?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          content?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };
@@ -273,3 +300,4 @@ export type ProjectStatus = Project["status"];
 export type Milestone = Tables<"project_milestones">;
 export type JournalEntry = Tables<"journal_entries">;
 export type JournalMood = NonNullable<JournalEntry["mood"]>;
+export type KnowledgeArticle = Tables<"knowledge_articles">;
