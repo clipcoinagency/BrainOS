@@ -125,7 +125,19 @@ The daily drivers. Suggested delivery order:
       while editing (that needs a markdown/wiki preview pane, deferred like
       Notes' own "rich text is a future enhancement").
 - ⬜ **Files** — Supabase Storage, upload & browse
-- ⬜ **Calendar** — unified schedule across modules
+- ✅ **Calendar** — month grid (`/calendar?month=YYYY-MM`, prev/next via plain
+      links, no client JS needed since navigation is just a URL param) that
+      aggregates open task due dates, active goal/project target dates, and
+      journal entry days into one view, each item linking back to its own
+      module. Reads the other modules' tables directly (scoped to the
+      caller), the same cross-module read pattern the search feature already
+      established, rather than importing those features' internals. No new
+      table. **Known v1 scope limit:** "today" for the default month and the
+      today-highlight is computed server-side rather than passed from the
+      browser — unlike a *write* path (e.g. journal's create-entry date),
+      this is a read-only, low-stakes approximation (worst case: the wrong
+      day highlighted, or defaulting to the adjacent month, for a user whose
+      local day disagrees with the server's near midnight).
 - ✅ **Habits** — quick add, per-day completion toggle, current streak,
       7-day dot strip; edit dialog (title/description) matching the
       tasks/goals dialog-editing pattern (no dedicated detail route). Two

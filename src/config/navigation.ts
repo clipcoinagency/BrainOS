@@ -129,7 +129,7 @@ export const navigation: NavSection[] = [
         href: "/calendar",
         icon: Calendar,
         description: "See your schedule across every module.",
-        status: "planned",
+        status: "available",
       },
       {
         title: "Habits",
