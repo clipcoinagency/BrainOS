@@ -5,7 +5,7 @@ import { AppTopbar } from "@/components/layout/app-topbar";
 import { CommandMenu } from "@/components/layout/command-menu";
 import { QuickCaptureDialog } from "@/components/layout/quick-capture-dialog";
 import type { ShellUser } from "@/components/layout/user-menu";
-import { getUser } from "@/features/auth/queries";
+import { getProfile, getUser } from "@/features/auth/queries";
 import { isSupabaseConfigured } from "@/lib/env";
 
 const GUEST: ShellUser = {
@@ -46,14 +46,23 @@ export default async function AppLayout({
     redirect("/login");
   }
 
+  // `profiles.full_name` (via Settings) is the single source of truth for
+  // the display name — see `updateProfile` in the settings feature for why
+  // this shell no longer reads Supabase Auth's separate `user_metadata`
+  // copy as its primary source. `user_metadata` is still a reasonable
+  // fallback for an account that hasn't set a profile name (it's seeded at
+  // signup), and the profiles row can transiently not exist yet (the
+  // `handle_new_user` trigger runs asynchronously after signup).
+  const profile = user ? await getProfile() : null;
   const metadataName =
     typeof user?.user_metadata?.full_name === "string"
       ? user.user_metadata.full_name
       : undefined;
+  const displayName = profile?.full_name?.trim() || metadataName;
 
   const shellUser: ShellUser = user
     ? toShellUser(
-        metadataName ?? user.email?.split("@")[0] ?? "User",
+        displayName || user.email?.split("@")[0] || "User",
         user.email ?? "",
       )
     : GUEST;

@@ -14,12 +14,22 @@ export type SettingsResult<T> = { data: T } | { error: string };
 /**
  * Update the current user's display name.
  *
- * Writes to both the `profiles` table (the durable, queryable record) and
- * Supabase Auth's own `user_metadata` (the copy embedded in the session that
- * the app shell's layout reads via `getUser()` to render the sidebar/topbar
- * name — see `src/app/(app)/layout.tsx`). These are kept in sync
- * deliberately: a client bound to only one of them would show a stale name
- * wherever the other is read from.
+ * `profiles` is the SINGLE source of truth for the display name — the app
+ * shell's layout reads it (via `getProfile()`, same as this page) to render
+ * the sidebar/topbar name, rather than reading Supabase Auth's separate
+ * `user_metadata` copy. An earlier version wrote both stores in parallel;
+ * that let one write silently succeed while the other failed, leaving the
+ * sidebar and this page permanently showing two different names with no
+ * error that explained why. Writing exactly one place removes the
+ * possibility of that split entirely, rather than trying to reconcile it
+ * after the fact.
+ *
+ * Uses `upsert` rather than `update`: the `handle_new_user` trigger creates
+ * a `profiles` row for every new signup, but `getProfile()`'s own fallback
+ * (see `src/app/(app)/settings/page.tsx`) already acknowledges that row can
+ * transiently not exist yet — a plain `.update()` would match zero rows in
+ * that case and PostgREST's `.single()` would treat that as a permanent
+ * error, one no retry could ever clear (UPDATE can't create a row).
  */
 export async function updateProfile(
   input: UpdateProfileInput,
@@ -35,23 +45,17 @@ export async function updateProfile(
   const { supabase, user } = ctx;
   const { fullName } = parsed.data;
 
-  const [profileResult, authResult] = await Promise.all([
-    supabase
-      .from("profiles")
-      .update({ full_name: fullName })
-      .eq("id", user.id)
-      .select()
-      .single(),
-    supabase.auth.updateUser({ data: { full_name: fullName } }),
-  ]);
+  const { data, error } = await supabase
+    .from("profiles")
+    .upsert({ id: user.id, full_name: fullName })
+    .select()
+    .single();
 
-  if (profileResult.error || authResult.error || !profileResult.data) {
-    return { error: "Failed to update your profile." };
-  }
+  if (error || !data) return { error: "Failed to update your profile." };
 
   // The shell's name comes from a Server Component layout — revalidating it
   // here (paired with the client calling `router.refresh()`) is what makes
   // the new name actually show up outside this page.
   revalidatePath("/", "layout");
-  return { data: profileResult.data };
+  return { data };
 }

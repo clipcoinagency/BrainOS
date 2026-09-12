@@ -83,6 +83,23 @@ export async function searchWorkspace(query: string): Promise<SearchResult[]> {
       .limit(RESULTS_PER_TYPE),
   ]);
 
+  // A per-table failure (RLS misconfiguration, transient DB error) would
+  // otherwise silently degrade to "no matches" for that category, making a
+  // real backend failure indistinguishable from an honest empty result —
+  // log it so it's at least observable server-side, without failing the
+  // whole search over one category.
+  for (const [label, result] of [
+    ["notes", notes],
+    ["tasks", tasks],
+    ["goals", goals],
+    ["projects", projects],
+    ["journal_entries", journalEntries],
+  ] as const) {
+    if (result.error) {
+      console.error(`searchWorkspace: ${label} query failed`, result.error);
+    }
+  }
+
   const results: SearchResult[] = [];
 
   for (const row of notes.data ?? []) {

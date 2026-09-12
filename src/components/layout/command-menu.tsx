@@ -27,15 +27,17 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { navigation, secondaryNavigation } from "@/config/navigation";
-import { createNote } from "@/features/notes/actions";
-import { createProject } from "@/features/projects/actions";
-import { createJournalEntry } from "@/features/journal/actions";
-import { useSearchWorkspace } from "@/features/search";
+import { useCreateNote } from "@/features/notes";
+import { useCreateProject } from "@/features/projects";
+import { useCreateJournalEntry } from "@/features/journal";
+import { MIN_SEARCH_QUERY_LENGTH, useSearchWorkspace } from "@/features/search";
 import type { SearchResult } from "@/features/search";
+import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
 
 import { openQuickCapture } from "./quick-capture-dialog";
 
 const COMMAND_MENU_EVENT = "brainos:open-command-menu";
+const SEARCH_DEBOUNCE_MS = 250;
 
 /** Programmatically open the command palette from anywhere on the client. */
 export function openCommandMenu() {
@@ -45,7 +47,7 @@ export function openCommandMenu() {
 /** Today's date as "YYYY-MM-DD" in the BROWSER's local timezone. Duplicated
  * (in miniature) from the journal feature's own `todayIsoDate` rather than
  * imported — this shell component reaches the journal feature only through
- * its `actions` entry point, never its internal `lib`. Always compute this
+ * its public barrel, never its internal `lib`. Always compute this
  * client-side and pass it explicitly: letting the server default it would
  * use the server process's own timezone instead of the user's (see the
  * journal feature's `createJournalEntry` for the bug this avoids). */
@@ -85,9 +87,22 @@ export function CommandMenu() {
   const router = useRouter();
   const { setTheme } = useTheme();
   const [open, setOpen] = useState(false);
+  // `query` drives the visible input text immediately; `debouncedQuery` is
+  // what's actually searched. Without this split, every keystroke would
+  // fire a fresh Server Action (5 Supabase queries) and briefly unmount the
+  // whole Results group — which, per cmdk's own reselection behavior, can
+  // silently kick keyboard selection back to the top of the palette.
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const debounceSearch = useDebouncedCallback(
+    setDebouncedQuery,
+    SEARCH_DEBOUNCE_MS,
+  );
 
-  const { data: results, isFetching } = useSearchWorkspace(query);
+  const { data: results, isFetching } = useSearchWorkspace(debouncedQuery);
+  const createNote = useCreateNote();
+  const createProject = useCreateProject();
+  const createJournalEntry = useCreateJournalEntry();
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -121,44 +136,78 @@ export function CommandMenu() {
   const runCommand = useCallback((command: () => void) => {
     setOpen(false);
     setQuery("");
+    setDebouncedQuery("");
     command();
   }, []);
 
   function handleOpenChange(next: boolean) {
     setOpen(next);
-    if (!next) setQuery("");
+    if (!next) {
+      setQuery("");
+      setDebouncedQuery("");
+    }
   }
 
-  // Each of these runs AFTER runCommand has already closed the dialog (its
-  // caller is `runCommand(() => { void handleNewX(); })`), so there is
-  // nothing left in this component to show a pending/error state in-place —
-  // a toast is the only feedback surface available by the time these settle.
-  const handleNewNote = useCallback(async () => {
-    const result = await createNote();
-    if ("error" in result) {
-      toast.error(result.error);
-      return;
-    }
-    router.push(`/notes/${result.data.id}`);
-  }, [router]);
+  function handleQueryChange(value: string) {
+    setQuery(value);
+    debounceSearch(value);
+  }
 
-  const handleNewProject = useCallback(async () => {
-    const result = await createProject({ title: "Untitled project" });
-    if ("error" in result) {
-      toast.error(result.error);
-      return;
-    }
-    router.push(`/projects/${result.data.id}`);
-  }, [router]);
+  // Each of these goes through the feature's own useCreateX mutation hook
+  // (not the bare "use server" action) so a note/project/entry created here
+  // invalidates the SAME TanStack Query cache the feature's own list page
+  // reads — calling the action directly would still create the row (and
+  // Next's revalidatePath would refresh a fresh server render), but the
+  // client-side list cache, if already populated from an earlier visit,
+  // would silently stay stale until it happened to go stale on its own.
+  // useMutation also guarantees onError fires even if the action rejects
+  // outright rather than resolving to {error} — a plain `await` here, with
+  // the dialog already closed by the time it settles, would otherwise risk
+  // an unhandled rejection with no feedback surface at all.
+  const handleNewNote = useCallback(() => {
+    createNote.mutate(undefined, {
+      onSuccess: (result) => {
+        if ("error" in result) {
+          toast.error(result.error);
+          return;
+        }
+        router.push(`/notes/${result.data.id}`);
+      },
+      onError: () => toast.error("Failed to create note."),
+    });
+  }, [createNote, router]);
 
-  const handleNewJournalEntry = useCallback(async () => {
-    const result = await createJournalEntry({ entryDate: todayIsoDate() });
-    if ("error" in result) {
-      toast.error(result.error);
-      return;
-    }
-    router.push(`/journal/${result.data.id}`);
-  }, [router]);
+  const handleNewProject = useCallback(() => {
+    createProject.mutate(
+      { title: "Untitled project" },
+      {
+        onSuccess: (result) => {
+          if ("error" in result) {
+            toast.error(result.error);
+            return;
+          }
+          router.push(`/projects/${result.data.id}`);
+        },
+        onError: () => toast.error("Failed to create project."),
+      },
+    );
+  }, [createProject, router]);
+
+  const handleNewJournalEntry = useCallback(() => {
+    createJournalEntry.mutate(
+      { entryDate: todayIsoDate() },
+      {
+        onSuccess: (result) => {
+          if ("error" in result) {
+            toast.error(result.error);
+            return;
+          }
+          router.push(`/journal/${result.data.id}`);
+        },
+        onError: () => toast.error("Failed to create journal entry."),
+      },
+    );
+  }, [createJournalEntry, router]);
 
   const quickActions = useMemo(
     () => [
@@ -172,19 +221,19 @@ export function CommandMenu() {
         key: "new-note",
         label: "New note",
         icon: NotebookPen,
-        onSelect: () => runCommand(() => void handleNewNote()),
+        onSelect: () => runCommand(handleNewNote),
       },
       {
         key: "new-project",
         label: "New project",
         icon: FolderKanban,
-        onSelect: () => runCommand(() => void handleNewProject()),
+        onSelect: () => runCommand(handleNewProject),
       },
       {
         key: "new-journal-entry",
         label: "New journal entry",
         icon: BookOpen,
-        onSelect: () => runCommand(() => void handleNewJournalEntry()),
+        onSelect: () => runCommand(handleNewJournalEntry),
       },
       // Tasks/Goals have no "blank create" flow to jump straight into (both
       // are created via quick-add on their own list page, not a dedicated
@@ -212,7 +261,21 @@ export function CommandMenu() {
   );
 
   const showThemeGroup = matches(query, "theme", "light", "dark", "system");
-  const showSearchResults = query.trim().length >= 2;
+  const showSearchResults =
+    debouncedQuery.trim().length >= MIN_SEARCH_QUERY_LENGTH;
+  const resultCount = results?.length ?? 0;
+
+  // Announced to screen readers outside CommandList — cmdk's own list/group/
+  // item roles (listbox/presentation/option) don't expose a live region, so
+  // a non-navigating screen reader user would otherwise have no way to know
+  // a search ran, is running, or how many results it found.
+  const searchStatusMessage = !showSearchResults
+    ? ""
+    : isFetching
+      ? "Searching…"
+      : resultCount > 0
+        ? `${resultCount} result${resultCount === 1 ? "" : "s"} found`
+        : "No results found";
 
   return (
     <CommandDialog
@@ -224,13 +287,17 @@ export function CommandMenu() {
     >
       <CommandInput
         value={query}
-        onValueChange={setQuery}
+        onValueChange={handleQueryChange}
         placeholder="Search modules or type a command…"
+        aria-label="Search modules or type a command"
       />
+      <span role="status" aria-live="polite" className="sr-only">
+        {searchStatusMessage}
+      </span>
       <CommandList>
         {showSearchResults &&
         !isFetching &&
-        (results?.length ?? 0) === 0 &&
+        resultCount === 0 &&
         visibleQuickActions.length === 0 &&
         visibleNavSections.length === 0 &&
         visibleSecondary.length === 0 ? (
@@ -252,9 +319,9 @@ export function CommandMenu() {
           </CommandGroup>
         ) : null}
 
-        {showSearchResults && (isFetching || (results?.length ?? 0) > 0) ? (
+        {showSearchResults && (isFetching || resultCount > 0) ? (
           <CommandGroup heading="Results">
-            {isFetching ? (
+            {isFetching && resultCount === 0 ? (
               <CommandItem disabled value="__loading">
                 <Loader2 className="size-4 animate-spin" />
                 Searching…
@@ -290,6 +357,11 @@ export function CommandMenu() {
               >
                 <item.icon className="size-4" />
                 {item.title}
+                {item.status === "planned" ? (
+                  <span className="text-muted-foreground ml-auto text-xs">
+                    Soon
+                  </span>
+                ) : null}
               </CommandItem>
             ))}
           </CommandGroup>
@@ -305,6 +377,11 @@ export function CommandMenu() {
               >
                 <item.icon className="size-4" />
                 {item.title}
+                {item.status === "planned" ? (
+                  <span className="text-muted-foreground ml-auto text-xs">
+                    Soon
+                  </span>
+                ) : null}
               </CommandItem>
             ))}
           </CommandGroup>

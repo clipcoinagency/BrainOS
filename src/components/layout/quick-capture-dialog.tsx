@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { createNote } from "@/features/notes/actions";
+import { useCreateNote } from "@/features/notes";
 
 const QUICK_CAPTURE_EVENT = "brainos:open-quick-capture";
 
@@ -37,7 +37,17 @@ export function QuickCaptureDialog() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [content, setContent] = useState("");
-  const [isPending, startTransition] = useTransition();
+  // Goes through the feature's own useCreateNote mutation hook (not the
+  // bare "use server" action) so a note captured here invalidates the SAME
+  // TanStack Query cache the Notes list reads — calling the action directly
+  // would still create the row (and Next's revalidatePath would refresh a
+  // fresh server render), but the client-side list cache, if already
+  // populated from an earlier /notes visit, would silently stay stale.
+  // useMutation also guarantees onError fires even if the action rejects
+  // outright rather than resolving to {error} — a plain `await` here, with
+  // this dialog closing immediately after, would otherwise risk an
+  // unhandled rejection with no feedback surface at all.
+  const createNote = useCreateNote();
 
   useEffect(() => {
     const onOpenEvent = () => setOpen(true);
@@ -54,21 +64,26 @@ export function QuickCaptureDialog() {
     const trimmed = content.trim();
     if (!trimmed) return;
 
-    startTransition(async () => {
-      const result = await createNote({ content: trimmed });
-      if ("error" in result) {
-        toast.error(result.error);
-        return;
-      }
+    createNote.mutate(
+      { content: trimmed },
+      {
+        onSuccess: (result) => {
+          if ("error" in result) {
+            toast.error(result.error);
+            return;
+          }
 
-      handleOpenChange(false);
-      toast.success("Captured to Notes.", {
-        action: {
-          label: "Open",
-          onClick: () => router.push(`/notes/${result.data.id}`),
+          handleOpenChange(false);
+          toast.success("Captured to Notes.", {
+            action: {
+              label: "Open",
+              onClick: () => router.push(`/notes/${result.data.id}`),
+            },
+          });
         },
-      });
-    });
+        onError: () => toast.error("Failed to capture note."),
+      },
+    );
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -111,9 +126,11 @@ export function QuickCaptureDialog() {
           </span>
           <Button
             onClick={handleCapture}
-            disabled={!content.trim() || isPending}
+            disabled={!content.trim() || createNote.isPending}
           >
-            {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+            {createNote.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : null}
             Save note
           </Button>
         </DialogFooter>

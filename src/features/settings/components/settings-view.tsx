@@ -53,9 +53,22 @@ export function SettingsView({
 function ProfileCard({ profile, email }: { profile: Profile; email: string }) {
   const updateProfile = useUpdateProfile();
   const [fullName, setFullName] = useState(profile.full_name ?? "");
+  // An explicit flag, set to `false` synchronously in the mutation's
+  // onSuccess — not derived by comparing `fullName` against the `profile`
+  // prop. `profile` comes from a Server Component and only updates once
+  // `router.refresh()` (fired in useUpdateProfile's onSuccess) completes its
+  // async re-fetch, which lags behind the mutation's own resolution; a
+  // prop-comparison dirty flag would leave the Save button re-enabled for a
+  // perceptible window after the "Profile updated." toast already fired.
+  // Matches the pattern used by NoteEditor/ProjectEditor/JournalEntryEditor.
+  const [dirty, setDirty] = useState(false);
 
   const trimmed = fullName.trim();
-  const dirty = trimmed !== (profile.full_name ?? "").trim();
+
+  function handleNameChange(event: React.ChangeEvent<HTMLInputElement>) {
+    setFullName(event.target.value);
+    setDirty(true);
+  }
 
   function handleSave(event: React.FormEvent) {
     event.preventDefault();
@@ -69,6 +82,7 @@ function ProfileCard({ profile, email }: { profile: Profile; email: string }) {
             toast.error(result.error);
             return;
           }
+          setDirty(false);
           toast.success("Profile updated.");
         },
         onError: () => toast.error("Failed to update your profile."),
@@ -91,7 +105,7 @@ function ProfileCard({ profile, email }: { profile: Profile; email: string }) {
             <Input
               id="settings-full-name"
               value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
+              onChange={handleNameChange}
               placeholder="Your name"
               maxLength={120}
             />
