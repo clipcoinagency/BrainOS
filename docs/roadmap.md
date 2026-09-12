@@ -31,7 +31,12 @@ Cross-cutting capabilities every module depends on. Build these before modules.
 - ✅ **Database schema & migrations** — `profiles` table with RLS, owner-scoped
       policies, `updated_at` + `handle_new_user` triggers; typed `Database`
       client; `supabase/README.md` setup guide.
-- ⬜ **User profile & settings** — build out `/settings`
+- ✅ **User profile & settings** — `/settings`: display name (synced to both
+      the `profiles` table and Supabase Auth's `user_metadata`, since the
+      shell's sidebar/topbar name is read from the latter), theme picker
+      (light/dark/system, role="radiogroup" like the Journal mood picker),
+      sign out. No new table or migration — reuses `profiles` from Phase 1's
+      `init` migration.
 - ⬜ **Quick Capture** — global capture action (wire the ⌘K / Capture button)
 - ⬜ **Global Search** — search across modules
 - ⬜ **Command palette actions** — create/act, not just navigate

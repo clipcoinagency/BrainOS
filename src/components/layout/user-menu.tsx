@@ -1,7 +1,8 @@
 "use client";
 
 import { useTransition } from "react";
-import { CreditCard, LogOut, Settings, User } from "lucide-react";
+import Link from "next/link";
+import { CreditCard, LogOut, Settings } from "lucide-react";
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -70,13 +71,11 @@ export function UserMenu({ user, authenticated }: UserMenuProps) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onSelect={() => toast("Profile — coming soon")}>
-            <User className="size-4" />
-            Profile
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => toast("Settings — coming soon")}>
-            <Settings className="size-4" />
-            Settings
+          <DropdownMenuItem asChild>
+            <Link href="/settings">
+              <Settings className="size-4" />
+              Settings
+            </Link>
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => toast("Billing — coming soon")}>
             <CreditCard className="size-4" />

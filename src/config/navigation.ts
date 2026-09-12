@@ -187,7 +187,7 @@ export const secondaryNavigation: NavItem[] = [
     href: "/settings",
     icon: Settings,
     description: "Preferences, appearance, and account.",
-    status: "planned",
+    status: "available",
   },
 ];
 
