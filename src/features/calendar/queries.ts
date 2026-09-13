@@ -61,6 +61,25 @@ export async function listCalendarEvents(
         .lt("entry_date", endIsoExclusive),
     ]);
 
+    // A per-table failure (RLS misconfiguration, transient DB error) would
+    // otherwise silently degrade to "no events" for that category, making a
+    // real backend failure indistinguishable from an honest empty result —
+    // log it so it's at least observable server-side (same pattern as the
+    // search feature's searchWorkspace).
+    for (const [label, result] of [
+      ["tasks", tasks],
+      ["goals", goals],
+      ["projects", projects],
+      ["journal_entries", journalEntries],
+    ] as const) {
+      if (result.error) {
+        console.error(
+          `listCalendarEvents: ${label} query failed`,
+          result.error,
+        );
+      }
+    }
+
     const events: CalendarEvent[] = [];
 
     for (const row of tasks.data ?? []) {

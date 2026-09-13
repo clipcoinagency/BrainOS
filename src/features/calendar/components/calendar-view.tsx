@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import {
+  formatFullDate,
   formatMonthLabel,
   getMonthGrid,
   monthParam,
@@ -125,6 +126,12 @@ export function CalendarView({
                 )}
               >
                 <span
+                  aria-current={day.isToday ? "date" : undefined}
+                  aria-label={
+                    day.isToday
+                      ? `${formatFullDate(day.date)} (today)`
+                      : formatFullDate(day.date)
+                  }
                   className={cn(
                     "flex size-6 items-center justify-center rounded-full text-xs",
                     day.isToday
@@ -142,7 +149,8 @@ export function CalendarView({
                     <Link
                       key={`${event.type}-${event.id}`}
                       href={event.href}
-                      className="hover:bg-muted flex items-center gap-1 rounded px-1 py-0.5 text-[11px]"
+                      aria-label={`${EVENT_TYPE_LABEL[event.type]}: ${event.title}`}
+                      className="hover:bg-muted focus-visible:ring-ring flex min-w-0 items-center gap-1 rounded px-1 py-0.5 text-[11px] focus-visible:ring-2 focus-visible:outline-none"
                     >
                       <span
                         className={cn(
@@ -151,7 +159,9 @@ export function CalendarView({
                         )}
                         aria-hidden="true"
                       />
-                      <span className="truncate">{event.title}</span>
+                      <span className="min-w-0 flex-1 truncate">
+                        {event.title}
+                      </span>
                     </Link>
                   ))}
                   {overflow > 0 ? (

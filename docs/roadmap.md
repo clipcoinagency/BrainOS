@@ -132,12 +132,26 @@ The daily drivers. Suggested delivery order:
       module. Reads the other modules' tables directly (scoped to the
       caller), the same cross-module read pattern the search feature already
       established, rather than importing those features' internals. No new
-      table. **Known v1 scope limit:** "today" for the default month and the
-      today-highlight is computed server-side rather than passed from the
-      browser — unlike a *write* path (e.g. journal's create-entry date),
-      this is a read-only, low-stakes approximation (worst case: the wrong
-      day highlighted, or defaulting to the adjacent month, for a user whose
-      local day disagrees with the server's near midnight).
+      table. **Known v1 scope limits:** (1) "today" for the default month and
+      the today-highlight is computed server-side rather than passed from
+      the browser — unlike a *write* path (e.g. journal's create-entry
+      date), this is a read-only, low-stakes approximation (worst case: the
+      wrong day highlighted, or defaulting to the adjacent month, for a user
+      whose local day disagrees with the server's near midnight). (2) A day
+      showing more than 3 events caps the display at 3 with a plain "+N
+      more" label — there is no day-detail view or popover yet, so the
+      overflow items aren't reachable from the calendar itself (only by
+      visiting the item's own module directly). Reviewed and fixed:
+      unbounded year in the URL month param (now Zod-validated, bounded
+      1900–2200 — an out-of-range year could hit JS's legacy two-digit-year
+      Date coercion or overflow a 4-digit year string), per-table query
+      errors were silently swallowed instead of logged, event type was
+      conveyed by color alone with no accessible name, the today cell had no
+      `aria-current`/screen-reader label, day cells had no full-date
+      `aria-label`, event links were missing `focus-visible` styling and
+      `min-w-0` (so a long title could overflow its cell instead of
+      ellipsizing), and the page title was static so the route announcer
+      never confirmed a month change to screen-reader users.
 - ✅ **Habits** — quick add, per-day completion toggle, current streak,
       7-day dot strip; edit dialog (title/description) matching the
       tasks/goals dialog-editing pattern (no dedicated detail route). Two

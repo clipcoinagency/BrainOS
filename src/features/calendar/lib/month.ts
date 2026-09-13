@@ -1,3 +1,5 @@
+import { monthParamSchema } from "../schemas";
+
 function toIsoDate(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -63,6 +65,21 @@ export function getMonthGridRange(
   };
 }
 
+/** Format an ISO date ("2026-09-17") as "Wednesday, September 17, 2026" —
+ * used as the day cell's accessible name so a screen reader conveys weekday
+ * context that the visual grid otherwise only shows via column position. */
+export function formatFullDate(isoDate: string): string {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  if (!year || !month || !day) return isoDate;
+
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(year, month - 1, day));
+}
+
 export function formatMonthLabel(year: number, month: number): string {
   return new Intl.DateTimeFormat("en-US", {
     month: "long",
@@ -80,21 +97,18 @@ export function shiftMonth(
   return { year: date.getFullYear(), month: date.getMonth() + 1 };
 }
 
-/** Parse a "YYYY-MM" search-param value, falling back when absent/invalid —
- * this is a URL param, reachable with arbitrary text regardless of what the
- * UI itself ever sends. */
+/** Parse a "YYYY-MM" search-param value via `monthParamSchema`, falling back
+ * when absent/invalid — Zod at the boundary, matching every other feature's
+ * convention for external input (see the search feature's
+ * `searchQuerySchema`), rather than a hand-rolled regex/range check that
+ * could accept an out-of-range year. */
 export function parseMonthParam(
   param: string | undefined,
   fallback: { year: number; month: number },
 ): { year: number; month: number } {
-  const match = param ? /^(\d{4})-(\d{2})$/.exec(param) : null;
-  if (!match) return fallback;
-
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  if (month < 1 || month > 12) return fallback;
-
-  return { year, month };
+  if (!param) return fallback;
+  const parsed = monthParamSchema.safeParse(param);
+  return parsed.success ? parsed.data : fallback;
 }
 
 export function monthParam(year: number, month: number): string {

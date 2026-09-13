@@ -5,15 +5,12 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { CalendarView } from "@/features/calendar";
 import {
+  formatMonthLabel,
   getMonthGridRange,
   parseMonthParam,
 } from "@/features/calendar/lib/month";
 import { listCalendarEvents } from "@/features/calendar/queries";
 import { isSupabaseConfigured } from "@/lib/env";
-
-export const metadata: Metadata = {
-  title: "Calendar",
-};
 
 interface CalendarPageProps {
   searchParams: Promise<{ month?: string }>;
@@ -27,16 +24,33 @@ function todayIsoDate(): string {
   return `${year}-${month}-${day}`;
 }
 
-export default async function CalendarPage({
-  searchParams,
-}: CalendarPageProps) {
+/** Resolve the displayed (year, month) from the URL, shared by
+ * `generateMetadata` and the page itself so they can never disagree. */
+async function resolveMonth(searchParams: CalendarPageProps["searchParams"]) {
   const { month: monthParamValue } = await searchParams;
   const today = todayIsoDate();
   const [todayYear, todayMonth] = today.split("-").map(Number);
-  const { year, month } = parseMonthParam(monthParamValue, {
-    year: todayYear,
-    month: todayMonth,
-  });
+  return {
+    today,
+    ...parseMonthParam(monthParamValue, { year: todayYear, month: todayMonth }),
+  };
+}
+
+export async function generateMetadata({
+  searchParams,
+}: CalendarPageProps): Promise<Metadata> {
+  const { year, month } = await resolveMonth(searchParams);
+  // A dynamic title (not a static "Calendar") so Next's route announcer has
+  // something to actually announce when Previous/Next month navigates —
+  // otherwise a screen-reader user gets no non-visual signal the month
+  // changed, since document.title and the page's own <h1> both stay fixed.
+  return { title: `Calendar — ${formatMonthLabel(year, month)}` };
+}
+
+export default async function CalendarPage({
+  searchParams,
+}: CalendarPageProps) {
+  const { today, year, month } = await resolveMonth(searchParams);
 
   if (!isSupabaseConfigured) {
     return (
