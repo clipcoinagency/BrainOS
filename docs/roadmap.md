@@ -150,9 +150,15 @@ The daily drivers. Suggested delivery order:
       for a log is always computed client-side and sent explicitly, bounded
       server-side to within one day of the server's UTC clock.
 
-## Phase 4 — Business & intelligence ⬜
+## Phase 4 — Business & intelligence 🚧
 
-- ⬜ **Clients** — relationship records
+- ✅ **Clients** — quick add, edit dialog (name/company/email/phone/notes,
+      keyed-remount RHF+Zod form like tasks/goals/habits), delete
+      (confirmed), search. Single table, same RLS pattern as everything
+      else. The create action is named `createClientRecord`, not
+      `createClient` — the latter collides with Supabase's own client-factory
+      helper (`@/lib/supabase/server`), which nearly every other feature's
+      `actions.ts` imports under that exact name.
 - ⬜ **Meetings** — agendas, notes, follow-ups
 - ⬜ **Finance** — income, expenses, budgets
 - ⬜ **AI Assistant** — question-answering and actions across the workspace

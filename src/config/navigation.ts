@@ -155,7 +155,7 @@ export const navigation: NavSection[] = [
         href: "/clients",
         icon: Users,
         description: "Manage relationships and client records.",
-        status: "planned",
+        status: "available",
       },
       {
         title: "Finance",

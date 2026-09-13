@@ -43,6 +43,8 @@ Open **SQL Editor** in the Supabase dashboard and run each migration in
    resolved from `content` at read time)
 9. [`20260912000005_habits.sql`](migrations/20260912000005_habits.sql) —
    `habits`, `habit_logs` (one row per day completed)
+10. [`20260912000006_clients.sql`](migrations/20260912000006_clients.sql) —
+    `clients`
 
 ### Option B — Supabase CLI (recommended for teams)
 
