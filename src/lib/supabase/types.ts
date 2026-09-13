@@ -364,6 +364,39 @@ export interface Database {
         };
         Relationships: [];
       };
+      meetings: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          scheduled_at: string | null;
+          attendees: string;
+          notes: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title?: string;
+          scheduled_at?: string | null;
+          attendees?: string;
+          notes?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          scheduled_at?: string | null;
+          attendees?: string;
+          notes?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };
@@ -391,3 +424,4 @@ export type KnowledgeArticle = Tables<"knowledge_articles">;
 export type Habit = Tables<"habits">;
 export type HabitLog = Tables<"habit_logs">;
 export type Client = Tables<"clients">;
+export type Meeting = Tables<"meetings">;

@@ -173,7 +173,16 @@ The daily drivers. Suggested delivery order:
       `createClient` — the latter collides with Supabase's own client-factory
       helper (`@/lib/supabase/server`), which nearly every other feature's
       `actions.ts` imports under that exact name.
-- ⬜ **Meetings** — agendas, notes, follow-ups
+- ✅ **Meetings** — list (`/meetings`, quick create) + detail page
+      (`/meetings/[id]`, debounced-autosave title/attendees/notes like Notes,
+      immediate-save scheduled time like Projects' target date). Single
+      table; `scheduled_at` is the only `timestamptz` column in the schema
+      (everywhere else uses a `date`, since those are day-level concepts).
+      The `<input type="datetime-local">` control's naive, no-timezone value
+      is converted with `new Date(value).toISOString()` in the browser
+      before it ever reaches the server — parsing it there instead would
+      interpret the same wall-clock string in the server's timezone, not the
+      user's, silently shifting the scheduled time.
 - ⬜ **Finance** — income, expenses, budgets
 - ⬜ **AI Assistant** — question-answering and actions across the workspace
 

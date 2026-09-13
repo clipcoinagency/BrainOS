@@ -143,7 +143,7 @@ export const navigation: NavSection[] = [
         href: "/meetings",
         icon: Video,
         description: "Notes, agendas, and follow-ups for meetings.",
-        status: "planned",
+        status: "available",
       },
     ],
   },
